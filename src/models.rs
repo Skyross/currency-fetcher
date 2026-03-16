@@ -9,6 +9,12 @@ pub enum Currency {
     GBP,
 }
 
+impl Currency {
+    pub fn all() -> &'static [Currency] {
+        &[Currency::USD, Currency::EUR, Currency::GBP]
+    }
+}
+
 impl fmt::Display for Currency {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
