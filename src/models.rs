@@ -1,16 +1,12 @@
 use std::fmt;
+use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Currency {
     USD,
     EUR,
     GBP,
-}
-
-impl Currency {
-    pub fn all() -> &'static [Currency] {
-        &[Currency::USD, Currency::EUR, Currency::GBP]
-    }
 }
 
 impl fmt::Display for Currency {
@@ -36,7 +32,8 @@ impl std::str::FromStr for Currency {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Country {
     Belarus,
     Georgia,
@@ -75,10 +72,31 @@ impl std::str::FromStr for Country {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ExchangeRate {
     pub country: Country,
     pub currency: Currency,
     pub rate: f64,
     pub date: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exchange_rate_serializes_to_flat_json_shape() {
+        let rate = ExchangeRate {
+            country: Country::Poland,
+            currency: Currency::USD,
+            rate: 4.0123,
+            date: "2026-03-16".to_string(),
+        };
+        let json = serde_json::to_string(&rate).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(v["country"], "poland");
+        assert_eq!(v["currency"], "usd");
+        assert_eq!(v["rate"], 4.0123);
+        assert_eq!(v["date"], "2026-03-16");
+    }
 }
