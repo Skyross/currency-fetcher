@@ -1,6 +1,7 @@
 mod banks;
 mod display;
 mod models;
+mod output;
 
 use clap::Parser;
 use models::{Country, Currency};
