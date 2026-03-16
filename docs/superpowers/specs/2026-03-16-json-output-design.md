@@ -9,14 +9,23 @@ Add a `--format` CLI flag that switches output between the existing ASCII table 
 
 ## CLI
 
-New `--format` / `-f` argument on the `Cli` struct using a `clap::ValueEnum`:
+`OutputFormat` is defined in `main.rs` (alongside `Cli`). It derives `clap::ValueEnum`, `Clone`, and `Copy`. `ValueEnum` is covered by the existing `clap = { features = ["derive"] }` — no new features needed:
 
+```rust
+#[derive(clap::ValueEnum, Clone, Copy)]
+pub enum OutputFormat {
+    Table,
+    Json,
+}
 ```
-currency-fetcher [OPTIONS]
 
-Options:
-  -f, --format <FORMAT>  Output format [default: table] [possible values: table, json]
+New argument on `Cli`:
+```rust
+#[arg(short = 'f', long, default_value = "table")]
+format: OutputFormat,
 ```
+
+Because `OutputFormat` is defined in `main.rs` (the crate root), it is already in scope there — no `use` statement needed in `main.rs`. `output.rs` references it as `crate::OutputFormat`.
 
 Example usage:
 ```
@@ -26,25 +35,43 @@ cargo run -- -c usd,eur -b poland --format json
 
 ## Models
 
-Add `serde::Serialize` to `ExchangeRate`, `Country`, and `Currency` in `models.rs`.
+Current state of `models.rs` (confirmed by reading the file):
+- `Country` and `Currency` are unit enums (no fields, no tuple/struct variants) with no existing serde attributes.
+- `ExchangeRate` has fields: `country: Country`, `currency: Currency`, `rate: f64`, `date: String`. No existing serde attributes.
+- `quick-xml` serde integration is used only in the `banks/` modules (XML deserialization of API responses), not on these model types.
 
-- `Country` and `Currency` serialize as lowercase strings (`"belarus"`, `"usd"`) to match the existing CLI input convention.
-- `rate` serializes as `f64` — consumers control decimal formatting.
-- `date` serializes as a plain string (already stored as one).
+Changes: add `#[derive(serde::Serialize)]` — and only `Serialize`, not `Deserialize` — to all three types in a single edit. No attribute conflicts to resolve.
+
+`Country` and `Currency` also get `#[serde(rename_all = "lowercase")]`. For unit enums this renames the variant tag to lowercase: `Country::Belarus` → `"belarus"`, `Currency::USD` → `"usd"`. This affects JSON output only; `FromStr` handles input parsing independently.
+
+`date` is already a `String` — no format annotation needed.
+
+`rate` is `f64`. `serde_json::to_string_pretty` returns `Err` for `NaN`/`Infinity` (which are not valid JSON numbers); `.unwrap()` will then panic. This is acceptable: `NaN`/`Infinity` from a bank API indicates a broken upstream response, and a panic is the appropriate signal.
 
 ## Output Module (`src/output.rs`)
 
-New module owns format dispatch. Exposes one public function:
+New file. `main.rs` gains `mod output;` alongside `mod banks; mod display; mod models;`.
 
+`output.rs`:
 ```rust
-pub fn print_rates(rates: &[ExchangeRate], format: OutputFormat)
+use crate::display;
+use crate::models::ExchangeRate;
+use crate::OutputFormat;
+
+pub fn print_rates(rates: &[ExchangeRate], format: OutputFormat) {
+    match format {
+        OutputFormat::Table => display::print_rates(rates),
+        OutputFormat::Json => {
+            // Panics on NaN/Infinity — acceptable, indicates broken upstream data
+            println!("{}", serde_json::to_string_pretty(rates).unwrap());
+        }
+    }
+}
 ```
 
-Internally:
-- `OutputFormat::Table` → delegates to existing `display::print_rates`
-- `OutputFormat::Json` → `serde_json::to_string_pretty(rates)` printed to stdout
+`display::print_rates` has signature `pub fn print_rates(rates: &[ExchangeRate])` and handles an empty slice by printing `"No rates fetched."`. The JSON path produces `[]` for an empty slice — this asymmetry is intentional; `[]` is the correct machine-readable representation.
 
-`display.rs` is untouched.
+`display.rs` is otherwise untouched.
 
 ## JSON Shape
 
@@ -57,17 +84,21 @@ Flat array of objects, one per rate:
 ]
 ```
 
+Empty result: `[]`.
+
 ## `main.rs` Changes
 
-- Import `OutputFormat` from `output` module (or define in `main.rs` and pass through)
-- Replace `display::print_rates(&all_rates)` with `output::print_rates(&all_rates, cli.format)`
+1. Define `OutputFormat` enum before `Cli`
+2. Add `mod output;`
+3. Add `format: OutputFormat` field to `Cli`
+4. Replace `display::print_rates(&all_rates)` with `output::print_rates(&all_rates, cli.format)` — `Copy` on `OutputFormat` means no move issue
 
 ## Dependencies
 
-No new crates needed. `serde` and `serde_json` are already in `Cargo.toml`.
+No new crates. `serde` (with `derive`), `serde_json`, and `clap` (with `derive`) are already in `Cargo.toml`.
 
 ## Out of Scope
 
 - Streaming / line-delimited JSON
 - CSV or other formats
-- Error output in JSON (failures still go to stderr as warnings)
+- Error output in JSON (fetch failures still go to stderr as plain text warnings)
