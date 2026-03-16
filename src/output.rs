@@ -1,6 +1,7 @@
 use crate::models::ExchangeRate;
 
 pub(crate) fn format_json(rates: &[ExchangeRate]) -> String {
+    // Panics if any rate is NaN or Infinity (broken upstream data)
     serde_json::to_string_pretty(rates).unwrap()
 }
 
@@ -36,6 +37,9 @@ mod tests {
         assert_eq!(parsed[0]["currency"], "usd");
         assert_eq!(parsed[1]["country"], "belarus");
         assert_eq!(parsed[1]["currency"], "eur");
+        assert!(json.contains('\n'), "output should be pretty-printed");
+        assert_eq!(parsed[0]["rate"], 4.0123);
+        assert_eq!(parsed[0]["date"], "2026-03-16");
     }
 
     #[test]
