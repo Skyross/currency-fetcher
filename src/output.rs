@@ -1,4 +1,16 @@
+use crate::display;
 use crate::models::ExchangeRate;
+use crate::OutputFormat;
+
+pub fn print_rates(rates: &[ExchangeRate], format: OutputFormat) {
+    match format {
+        OutputFormat::Table => display::print_rates(rates),
+        OutputFormat::Json => {
+            // Panics on NaN/Infinity — acceptable, indicates broken upstream data
+            println!("{}", format_json(rates));
+        }
+    }
+}
 
 pub(crate) fn format_json(rates: &[ExchangeRate]) -> String {
     // Panics if any rate is NaN or Infinity (broken upstream data)

@@ -7,6 +7,12 @@ use clap::Parser;
 use models::{Country, Currency};
 use reqwest::Client;
 
+#[derive(clap::ValueEnum, Clone, Copy)]
+pub(crate) enum OutputFormat {
+    Table,
+    Json,
+}
+
 #[derive(Parser)]
 #[command(name = "currency-fetcher", version, about = "Fetch official exchange rates from national banks")]
 struct Cli {
@@ -17,6 +23,10 @@ struct Cli {
     /// Banks/countries to query (comma-separated: belarus,georgia,poland,russia or all)
     #[arg(short, long, default_value = "all")]
     banks: String,
+
+    /// Output format
+    #[arg(short = 'f', long, default_value = "table")]
+    format: OutputFormat,
 }
 
 fn parse_currencies(s: &str) -> anyhow::Result<Vec<Currency>> {
@@ -74,6 +84,6 @@ async fn main() -> anyhow::Result<()> {
             .then(a.currency.to_string().cmp(&b.currency.to_string()))
     });
 
-    display::print_rates(&all_rates);
+    output::print_rates(&all_rates, cli.format);
     Ok(())
 }
