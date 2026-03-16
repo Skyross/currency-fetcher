@@ -2,7 +2,7 @@ use crate::display;
 use crate::models::ExchangeRate;
 use crate::OutputFormat;
 
-pub fn print_rates(rates: &[ExchangeRate], format: OutputFormat) {
+pub(crate) fn print_rates(rates: &[ExchangeRate], format: OutputFormat) {
     match format {
         OutputFormat::Table => display::print_rates(rates),
         OutputFormat::Json => {

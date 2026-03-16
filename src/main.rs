@@ -1,5 +1,5 @@
 mod banks;
-mod display;
+mod display; // declared here so output.rs can use crate::display
 mod models;
 mod output;
 
