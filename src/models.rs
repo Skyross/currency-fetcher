@@ -24,11 +24,14 @@ impl std::str::FromStr for Currency {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_uppercase().as_str() {
-            "USD" => Ok(Currency::USD),
-            "EUR" => Ok(Currency::EUR),
-            "GBP" => Ok(Currency::GBP),
-            other => anyhow::bail!("unknown currency: {other}"),
+        if s.eq_ignore_ascii_case("usd") {
+            Ok(Currency::USD)
+        } else if s.eq_ignore_ascii_case("eur") {
+            Ok(Currency::EUR)
+        } else if s.eq_ignore_ascii_case("gbp") {
+            Ok(Currency::GBP)
+        } else {
+            anyhow::bail!("unknown currency: {s}")
         }
     }
 }
