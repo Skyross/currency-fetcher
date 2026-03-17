@@ -19,7 +19,7 @@ pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<V
     for &cur in currencies {
         let url = format!(
             "https://api.nbp.pl/api/exchangerates/rates/a/{}/?format=json",
-            cur.to_string().to_lowercase()
+            cur.as_lower_code()
         );
         let resp: NbpResponse = client.get(&url).send().await?.json().await?;
         if let Some(r) = resp.rates.first() {

@@ -20,6 +20,16 @@ impl fmt::Display for Currency {
     }
 }
 
+impl Currency {
+    pub(crate) fn as_lower_code(self) -> &'static str {
+        match self {
+            Currency::USD => "usd",
+            Currency::EUR => "eur",
+            Currency::GBP => "gbp",
+        }
+    }
+}
+
 impl std::str::FromStr for Currency {
     type Err = anyhow::Error;
 
