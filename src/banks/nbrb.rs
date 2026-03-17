@@ -1,6 +1,7 @@
 use crate::models::{Country, Currency, ExchangeRate};
 use reqwest::Client;
 use serde::Deserialize;
+use super::util;
 
 #[derive(Deserialize)]
 struct NbrbResponse {
@@ -28,8 +29,7 @@ pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<V
             currency_code(cur)
         );
         let resp: NbrbResponse = client.get(&url).send().await?.json().await?;
-        // date comes as "2024-01-15T00:00:00", take just the date part
-        let date = resp.date.split('T').next().unwrap_or(&resp.date).to_string();
+        let date = util::trim_date(&resp.date);
         rates.push(ExchangeRate {
             country: Country::Belarus,
             currency: cur,

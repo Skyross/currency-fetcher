@@ -1,6 +1,7 @@
 use crate::models::{Country, Currency, ExchangeRate};
 use reqwest::Client;
 use serde::Deserialize;
+use super::util;
 
 #[derive(Deserialize)]
 struct NbgResponse {
@@ -13,10 +14,6 @@ struct NbgCurrency {
     code: String,
     quantity: f64,
     rate: f64,
-}
-
-fn parse_date(date_str: &str) -> String {
-    date_str.split('T').next().unwrap_or(date_str).to_string()
 }
 
 pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
@@ -39,7 +36,7 @@ pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<V
                     country: Country::Georgia,
                     currency,
                     rate: c.rate / c.quantity,
-                    date: parse_date(&resp.date),
+                    date: util::trim_date(&resp.date),
                 });
             }
         }

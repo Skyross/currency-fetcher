@@ -2,6 +2,7 @@ mod cbr;
 mod nbg;
 mod nbp;
 mod nbrb;
+mod util;
 
 use crate::models::{Country, Currency, ExchangeRate};
 use reqwest::Client;
