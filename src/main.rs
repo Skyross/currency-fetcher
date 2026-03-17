@@ -5,13 +5,8 @@ mod output;
 
 use clap::Parser;
 use models::{Country, Currency};
+use output::OutputFormat;
 use reqwest::Client;
-
-#[derive(clap::ValueEnum, Clone, Copy)]
-pub(crate) enum OutputFormat {
-    Table,
-    Json,
-}
 
 #[derive(Parser)]
 #[command(name = "currency-fetcher", version, about = "Fetch official exchange rates from national banks")]

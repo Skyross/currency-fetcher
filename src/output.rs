@@ -1,6 +1,11 @@
 use crate::display;
 use crate::models::ExchangeRate;
-use crate::OutputFormat;
+
+#[derive(clap::ValueEnum, Clone, Copy)]
+pub(crate) enum OutputFormat {
+    Table,
+    Json,
+}
 
 pub(crate) fn print_rates(rates: &[ExchangeRate], format: OutputFormat) {
     match format {
