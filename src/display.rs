@@ -13,7 +13,7 @@ struct RateRow {
     date: String,
 }
 
-pub fn print_rates(rates: &[ExchangeRate]) {
+pub(crate) fn print_rates(rates: &[ExchangeRate]) {
     if rates.is_empty() {
         println!("No rates fetched.");
         return;
