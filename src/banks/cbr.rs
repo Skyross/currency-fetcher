@@ -22,7 +22,10 @@ struct Valute {
 }
 
 fn parse_cbr_decimal(s: &str) -> anyhow::Result<f64> {
-    Ok(s.replace(',', ".").parse()?)
+    Ok(s.replace('\u{00A0}', "")
+        .replace(' ', "")
+        .replace(',', ".")
+        .parse()?)
 }
 
 fn convert_date(dd_mm_yyyy: &str) -> String {
@@ -68,4 +71,16 @@ pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<V
         });
     }
     Ok(rates)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_cbr_decimal_handles_thousands_separator() {
+        assert_eq!(parse_cbr_decimal("1\u{00A0}234,56").unwrap(), 1234.56);
+        assert_eq!(parse_cbr_decimal("1 234,56").unwrap(), 1234.56);
+        assert_eq!(parse_cbr_decimal("87,6325").unwrap(), 87.6325);
+    }
 }
