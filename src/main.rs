@@ -72,12 +72,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Sort by country then currency for consistent display
-    all_rates.sort_by(|a, b| {
-        a.country
-            .to_string()
-            .cmp(&b.country.to_string())
-            .then(a.currency.to_string().cmp(&b.currency.to_string()))
-    });
+    all_rates.sort_by_key(|r| (r.country, r.currency));
 
     output::print_rates(&all_rates, cli.format);
     Ok(())

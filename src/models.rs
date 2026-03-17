@@ -1,7 +1,7 @@
 use std::fmt;
 use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Currency {
     USD,
@@ -9,11 +9,6 @@ pub enum Currency {
     GBP,
 }
 
-impl Currency {
-    pub fn all() -> &'static [Currency] {
-        &[Currency::USD, Currency::EUR, Currency::GBP]
-    }
-}
 
 impl fmt::Display for Currency {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -38,7 +33,7 @@ impl std::str::FromStr for Currency {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Country {
     Belarus,
@@ -104,5 +99,14 @@ mod tests {
         assert_eq!(v["currency"], "usd");
         assert_eq!(v["rate"], 4.0123);
         assert_eq!(v["date"], "2026-03-16");
+    }
+
+    #[test]
+    fn country_and_currency_sort_by_declaration_order() {
+        assert!(Country::Belarus < Country::Georgia);
+        assert!(Country::Georgia < Country::Poland);
+        assert!(Country::Poland < Country::Russia);
+        assert!(Currency::USD < Currency::EUR);
+        assert!(Currency::EUR < Currency::GBP);
     }
 }
