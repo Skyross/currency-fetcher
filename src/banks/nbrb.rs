@@ -13,20 +13,12 @@ struct NbrbResponse {
     date: String,
 }
 
-fn currency_code(c: Currency) -> &'static str {
-    match c {
-        Currency::USD => "USD",
-        Currency::EUR => "EUR",
-        Currency::GBP => "GBP",
-    }
-}
-
 pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
     let mut rates = Vec::new();
     for &cur in currencies {
         let url = format!(
             "https://api.nbrb.by/exrates/rates/{}?parammode=2",
-            currency_code(cur)
+            cur
         );
         let resp: NbrbResponse = client.get(&url).send().await?.json().await?;
         let date = util::trim_date(&resp.date);

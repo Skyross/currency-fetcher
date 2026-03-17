@@ -14,20 +14,12 @@ struct NbpRate {
     mid: f64,
 }
 
-fn currency_code(c: Currency) -> &'static str {
-    match c {
-        Currency::USD => "usd",
-        Currency::EUR => "eur",
-        Currency::GBP => "gbp",
-    }
-}
-
 pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
     let mut rates = Vec::new();
     for &cur in currencies {
         let url = format!(
             "https://api.nbp.pl/api/exchangerates/rates/a/{}/?format=json",
-            currency_code(cur)
+            cur.to_string().to_lowercase()
         );
         let resp: NbpResponse = client.get(&url).send().await?.json().await?;
         if let Some(r) = resp.rates.first() {
