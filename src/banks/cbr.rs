@@ -1,4 +1,5 @@
 use crate::models::{Country, Currency, ExchangeRate};
+use anyhow::Context;
 use reqwest::Client;
 use serde::Deserialize;
 
@@ -61,12 +62,13 @@ pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<V
             "GBP" => Currency::GBP,
             _ => continue,
         };
-        let nominal = parse_cbr_decimal(&v.nominal)?;
+        let nominal: u32 = v.nominal.trim().parse()
+            .with_context(|| format!("CBR: invalid nominal '{}'", v.nominal))?;
         let value = parse_cbr_decimal(&v.value)?;
         rates.push(ExchangeRate {
             country: Country::Russia,
             currency,
-            rate: value / nominal,
+            rate: value / f64::from(nominal),
             date: date.clone(),
         });
     }
@@ -82,5 +84,14 @@ mod tests {
         assert_eq!(parse_cbr_decimal("1\u{00A0}234,56").unwrap(), 1234.56);
         assert_eq!(parse_cbr_decimal("1 234,56").unwrap(), 1234.56);
         assert_eq!(parse_cbr_decimal("87,6325").unwrap(), 87.6325);
+    }
+
+    #[test]
+    fn parse_nominal_exact() {
+        // nominal "10" should divide value "876,3250" to exactly 87.6325
+        let nominal: u32 = "10".trim().parse().unwrap();
+        let value = parse_cbr_decimal("876,3250").unwrap();
+        let result = value / f64::from(nominal);
+        assert!((result - 87.6325).abs() < 1e-10);
     }
 }
