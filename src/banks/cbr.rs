@@ -2,6 +2,7 @@ use crate::models::{Country, Currency, ExchangeRate};
 use anyhow::Context;
 use reqwest::Client;
 use serde::Deserialize;
+use std::collections::HashSet;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename = "ValCurs")]
@@ -45,7 +46,7 @@ pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<V
     let val_curs: ValCurs = quick_xml::de::from_str(&text)?;
     let date = convert_date(&val_curs.date);
 
-    let wanted: Vec<&str> = currencies.iter().map(|c| match c {
+    let wanted: HashSet<&str> = currencies.iter().map(|c| match c {
         Currency::USD => "USD",
         Currency::EUR => "EUR",
         Currency::GBP => "GBP",
