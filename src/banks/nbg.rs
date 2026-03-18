@@ -1,7 +1,7 @@
+use super::util;
 use crate::models::{Country, Currency, ExchangeRate};
 use reqwest::Client;
 use serde::Deserialize;
-use super::util;
 
 #[derive(Deserialize)]
 struct NbgResponse {
@@ -26,7 +26,11 @@ fn process_response(items: &[NbgResponse], cur: Currency) -> Option<ExchangeRate
     })
 }
 
-pub(super) async fn fetch(client: &Client, base_url: &str, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
+pub(super) async fn fetch(
+    client: &Client,
+    base_url: &str,
+    currencies: &[Currency],
+) -> anyhow::Result<Vec<ExchangeRate>> {
     let mut rates = Vec::new();
     for &cur in currencies {
         let url = format!("{}?currencies={}", base_url, cur);
@@ -56,7 +60,10 @@ mod tests {
     fn process_response_builds_rate() {
         let items = vec![NbgResponse {
             date: "2026-03-18T00:00:00".to_string(),
-            currencies: vec![NbgCurrency { quantity: 1.0, rate: 2.85 }],
+            currencies: vec![NbgCurrency {
+                quantity: 1.0,
+                rate: 2.85,
+            }],
         }];
         let rate = process_response(&items, Currency::USD).unwrap();
         assert_eq!(rate.country, Country::Georgia);
@@ -69,7 +76,10 @@ mod tests {
     fn process_response_divides_by_quantity() {
         let items = vec![NbgResponse {
             date: "2026-03-18T00:00:00".to_string(),
-            currencies: vec![NbgCurrency { quantity: 100.0, rate: 285.0 }],
+            currencies: vec![NbgCurrency {
+                quantity: 100.0,
+                rate: 285.0,
+            }],
         }];
         let rate = process_response(&items, Currency::EUR).unwrap();
         assert!((rate.rate - 2.85).abs() < 1e-10);
@@ -91,8 +101,8 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_from_with_mock_server() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::{method, query_param};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let json = r#"[{"date":"2026-03-18T00:00:00","currencies":[{"code":"USD","quantity":1.0,"rate":2.85}]}]"#;
 
@@ -104,7 +114,9 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        let rates = fetch(&client, &server.uri(), &[Currency::USD]).await.unwrap();
+        let rates = fetch(&client, &server.uri(), &[Currency::USD])
+            .await
+            .unwrap();
         assert_eq!(rates.len(), 1);
         assert_eq!(rates[0].currency, Currency::USD);
         assert_eq!(rates[0].country, Country::Georgia);

@@ -24,8 +24,8 @@ pub(crate) fn format_json(rates: &[ExchangeRate]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::{Country, Currency, ExchangeRate};
     use super::*;
+    use crate::models::{Country, Currency, ExchangeRate};
 
     fn make_rates() -> Vec<ExchangeRate> {
         vec![

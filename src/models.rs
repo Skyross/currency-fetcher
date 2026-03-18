@@ -1,14 +1,14 @@
-use std::fmt;
 use serde::Serialize;
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "lowercase")]
+#[allow(clippy::upper_case_acronyms)]
 pub enum Currency {
     USD,
     EUR,
     GBP,
 }
-
 
 impl fmt::Display for Currency {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -57,7 +57,12 @@ pub enum Country {
 
 impl Country {
     pub fn all() -> &'static [Country] {
-        &[Country::Belarus, Country::Georgia, Country::Poland, Country::Russia]
+        &[
+            Country::Belarus,
+            Country::Georgia,
+            Country::Poland,
+            Country::Russia,
+        ]
     }
 }
 

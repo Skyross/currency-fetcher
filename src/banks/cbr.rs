@@ -24,10 +24,7 @@ struct Valute {
 }
 
 fn parse_cbr_decimal(s: &str) -> anyhow::Result<f64> {
-    Ok(s.replace('\u{00A0}', "")
-        .replace(' ', "")
-        .replace(',', ".")
-        .parse()?)
+    Ok(s.replace(['\u{00A0}', ' '], "").replace(',', ".").parse()?)
 }
 
 fn convert_date(dd_mm_yyyy: &str) -> String {
@@ -44,11 +41,14 @@ fn process_xml(text: &str, currencies: &[Currency]) -> anyhow::Result<Vec<Exchan
     let val_curs: ValCurs = quick_xml::de::from_str(text)?;
     let date = convert_date(&val_curs.date);
 
-    let wanted: HashSet<&str> = currencies.iter().map(|c| match c {
-        Currency::USD => "USD",
-        Currency::EUR => "EUR",
-        Currency::GBP => "GBP",
-    }).collect();
+    let wanted: HashSet<&str> = currencies
+        .iter()
+        .map(|c| match c {
+            Currency::USD => "USD",
+            Currency::EUR => "EUR",
+            Currency::GBP => "GBP",
+        })
+        .collect();
 
     let mut rates = Vec::new();
     for v in &val_curs.valutes {
@@ -61,7 +61,10 @@ fn process_xml(text: &str, currencies: &[Currency]) -> anyhow::Result<Vec<Exchan
             "GBP" => Currency::GBP,
             _ => continue,
         };
-        let nominal: u32 = v.nominal.trim().parse()
+        let nominal: u32 = v
+            .nominal
+            .trim()
+            .parse()
             .with_context(|| format!("CBR: invalid nominal '{}'", v.nominal))?;
         let value = parse_cbr_decimal(&v.value)?;
         rates.push(ExchangeRate {
@@ -74,7 +77,11 @@ fn process_xml(text: &str, currencies: &[Currency]) -> anyhow::Result<Vec<Exchan
     Ok(rates)
 }
 
-pub(super) async fn fetch(client: &Client, url: &str, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
+pub(super) async fn fetch(
+    client: &Client,
+    url: &str,
+    currencies: &[Currency],
+) -> anyhow::Result<Vec<ExchangeRate>> {
     let text = client.get(url).send().await?.text().await?;
     process_xml(&text, currencies)
 }
@@ -223,8 +230,8 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_from_with_mock_server() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::method;
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let xml = r#"<ValCurs Date="18.03.2026">
     <Valute><CharCode>USD</CharCode><Nominal>1</Nominal><Value>87,6325</Value></Valute>
@@ -238,7 +245,9 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        let rates = fetch(&client, &server.uri(), &[Currency::USD, Currency::EUR]).await.unwrap();
+        let rates = fetch(&client, &server.uri(), &[Currency::USD, Currency::EUR])
+            .await
+            .unwrap();
         assert_eq!(rates.len(), 2);
         assert_eq!(rates[0].currency, Currency::USD);
         assert!((rates[0].rate - 87.6325).abs() < 1e-10);

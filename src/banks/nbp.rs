@@ -24,7 +24,11 @@ fn process_response(resp: &NbpResponse, cur: Currency) -> Option<ExchangeRate> {
     })
 }
 
-pub(super) async fn fetch(client: &Client, base_url: &str, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
+pub(super) async fn fetch(
+    client: &Client,
+    base_url: &str,
+    currencies: &[Currency],
+) -> anyhow::Result<Vec<ExchangeRate>> {
     let mut rates = Vec::new();
     for &cur in currencies {
         let url = format!("{}/{}/?format=json", base_url, cur.as_lower_code());
@@ -72,8 +76,8 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_from_with_mock_server() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let json = r#"{"table":"A","currency":"US Dollar","code":"USD","rates":[{"no":"053","effectiveDate":"2026-03-17","mid":4.0123}]}"#;
 
@@ -85,7 +89,9 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        let rates = fetch(&client, &server.uri(), &[Currency::USD]).await.unwrap();
+        let rates = fetch(&client, &server.uri(), &[Currency::USD])
+            .await
+            .unwrap();
         assert_eq!(rates.len(), 1);
         assert_eq!(rates[0].currency, Currency::USD);
         assert_eq!(rates[0].country, Country::Poland);

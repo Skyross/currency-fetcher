@@ -1,7 +1,7 @@
+use super::util;
 use crate::models::{Country, Currency, ExchangeRate};
 use reqwest::Client;
 use serde::Deserialize;
-use super::util;
 
 #[derive(Deserialize)]
 struct NbrbResponse {
@@ -22,7 +22,11 @@ fn process_response(resp: &NbrbResponse, cur: Currency) -> ExchangeRate {
     }
 }
 
-pub(super) async fn fetch(client: &Client, base_url: &str, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
+pub(super) async fn fetch(
+    client: &Client,
+    base_url: &str,
+    currencies: &[Currency],
+) -> anyhow::Result<Vec<ExchangeRate>> {
     let mut rates = Vec::new();
     for &cur in currencies {
         let url = format!("{}/{}?parammode=2", base_url, cur);
@@ -72,8 +76,8 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_from_with_mock_server() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
 
         let json = r#"{"Cur_ID":431,"Date":"2026-03-18T00:00:00","Cur_Abbreviation":"USD","Cur_Scale":1,"Cur_Name":"US Dollar","Cur_OfficialRate":3.2800}"#;
 
@@ -85,7 +89,9 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        let rates = fetch(&client, &server.uri(), &[Currency::USD]).await.unwrap();
+        let rates = fetch(&client, &server.uri(), &[Currency::USD])
+            .await
+            .unwrap();
         assert_eq!(rates.len(), 1);
         assert_eq!(rates[0].currency, Currency::USD);
         assert_eq!(rates[0].country, Country::Belarus);

@@ -41,8 +41,8 @@ pub async fn fetch_rates(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wiremock::{MockServer, Mock, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn base_url_returns_correct_urls() {
@@ -65,14 +65,17 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        let rates = fetch_rates_from(&client, Country::Russia, &server.uri(), &[Currency::USD]).await.unwrap();
+        let rates = fetch_rates_from(&client, Country::Russia, &server.uri(), &[Currency::USD])
+            .await
+            .unwrap();
         assert_eq!(rates.len(), 1);
         assert_eq!(rates[0].country, Country::Russia);
     }
 
     #[tokio::test]
     async fn fetch_rates_from_dispatches_to_nbrb() {
-        let json = r#"{"Cur_ID":431,"Date":"2026-03-18T00:00:00","Cur_Scale":1,"Cur_OfficialRate":3.28}"#;
+        let json =
+            r#"{"Cur_ID":431,"Date":"2026-03-18T00:00:00","Cur_Scale":1,"Cur_OfficialRate":3.28}"#;
 
         let server = MockServer::start().await;
         Mock::given(method("GET"))
@@ -81,7 +84,9 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        let rates = fetch_rates_from(&client, Country::Belarus, &server.uri(), &[Currency::USD]).await.unwrap();
+        let rates = fetch_rates_from(&client, Country::Belarus, &server.uri(), &[Currency::USD])
+            .await
+            .unwrap();
         assert_eq!(rates.len(), 1);
         assert_eq!(rates[0].country, Country::Belarus);
     }
@@ -97,7 +102,9 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        let rates = fetch_rates_from(&client, Country::Georgia, &server.uri(), &[Currency::USD]).await.unwrap();
+        let rates = fetch_rates_from(&client, Country::Georgia, &server.uri(), &[Currency::USD])
+            .await
+            .unwrap();
         assert_eq!(rates.len(), 1);
         assert_eq!(rates[0].country, Country::Georgia);
     }
@@ -113,7 +120,9 @@ mod tests {
             .await;
 
         let client = reqwest::Client::new();
-        let rates = fetch_rates_from(&client, Country::Poland, &server.uri(), &[Currency::USD]).await.unwrap();
+        let rates = fetch_rates_from(&client, Country::Poland, &server.uri(), &[Currency::USD])
+            .await
+            .unwrap();
         assert_eq!(rates.len(), 1);
         assert_eq!(rates[0].country, Country::Poland);
     }

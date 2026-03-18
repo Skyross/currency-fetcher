@@ -9,7 +9,11 @@ use output::OutputFormat;
 use reqwest::Client;
 
 #[derive(Parser)]
-#[command(name = "currency-fetcher", version, about = "Fetch official exchange rates from national banks")]
+#[command(
+    name = "currency-fetcher",
+    version,
+    about = "Fetch official exchange rates from national banks"
+)]
 struct Cli {
     /// Currencies to fetch (comma-separated: usd,eur,gbp)
     #[arg(short, long, default_value = "usd,eur,gbp")]
@@ -25,18 +29,14 @@ struct Cli {
 }
 
 fn parse_currencies(s: &str) -> anyhow::Result<Vec<Currency>> {
-    s.split(',')
-        .map(|c| c.trim().parse())
-        .collect()
+    s.split(',').map(|c| c.trim().parse()).collect()
 }
 
 fn parse_countries(s: &str) -> anyhow::Result<Vec<Country>> {
     if s.trim().eq_ignore_ascii_case("all") {
         return Ok(Country::all().to_vec());
     }
-    s.split(',')
-        .map(|c| c.trim().parse())
-        .collect()
+    s.split(',').map(|c| c.trim().parse()).collect()
 }
 
 #[tokio::main]
