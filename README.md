@@ -1,5 +1,8 @@
 # currency-fetcher
 
+[![CI](https://github.com/Skyross/currency-fetcher/actions/workflows/ci.yml/badge.svg)](https://github.com/Skyross/currency-fetcher/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Skyross/currency-fetcher/branch/master/graph/badge.svg)](https://codecov.io/gh/Skyross/currency-fetcher)
+
 CLI tool that fetches official exchange rates (USD, EUR, GBP) from national banks of Belarus, Georgia, Poland, and Russia.
 
 ## Supported Banks

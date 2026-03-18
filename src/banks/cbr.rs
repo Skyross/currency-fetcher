@@ -40,10 +40,8 @@ fn convert_date(dd_mm_yyyy: &str) -> String {
     }
 }
 
-pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
-    let url = "https://www.cbr.ru/scripts/XML_daily.asp";
-    let text = client.get(url).send().await?.text().await?;
-    let val_curs: ValCurs = quick_xml::de::from_str(&text)?;
+fn process_xml(text: &str, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
+    let val_curs: ValCurs = quick_xml::de::from_str(text)?;
     let date = convert_date(&val_curs.date);
 
     let wanted: HashSet<&str> = currencies.iter().map(|c| match c {
@@ -76,6 +74,11 @@ pub async fn fetch(client: &Client, currencies: &[Currency]) -> anyhow::Result<V
     Ok(rates)
 }
 
+pub(super) async fn fetch(client: &Client, url: &str, currencies: &[Currency]) -> anyhow::Result<Vec<ExchangeRate>> {
+    let text = client.get(url).send().await?.text().await?;
+    process_xml(&text, currencies)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,11 +91,157 @@ mod tests {
     }
 
     #[test]
+    fn parse_cbr_decimal_plain_integer() {
+        assert_eq!(parse_cbr_decimal("100").unwrap(), 100.0);
+    }
+
+    #[test]
+    fn parse_cbr_decimal_invalid() {
+        assert!(parse_cbr_decimal("abc").is_err());
+    }
+
+    #[test]
     fn parse_nominal_exact() {
-        // nominal "10" should divide value "876,3250" to exactly 87.6325
         let nominal: u32 = "10".trim().parse().unwrap();
         let value = parse_cbr_decimal("876,3250").unwrap();
         let result = value / f64::from(nominal);
         assert!((result - 87.6325).abs() < 1e-10);
+    }
+
+    #[test]
+    fn convert_date_valid() {
+        assert_eq!(convert_date("15.01.2024"), "2024-01-15");
+        assert_eq!(convert_date("01.12.2026"), "2026-12-01");
+    }
+
+    #[test]
+    fn convert_date_invalid_passes_through() {
+        assert_eq!(convert_date("2024-01-15"), "2024-01-15");
+        assert_eq!(convert_date("bogus"), "bogus");
+    }
+
+    #[test]
+    fn valcurs_deserializes_from_xml() {
+        let xml = r#"<?xml version="1.0" encoding="windows-1251"?>
+<ValCurs Date="18.03.2026" name="Foreign Currency Market">
+    <Valute ID="R01235">
+        <CharCode>USD</CharCode>
+        <Nominal>1</Nominal>
+        <Value>87,6325</Value>
+    </Valute>
+    <Valute ID="R01239">
+        <CharCode>EUR</CharCode>
+        <Nominal>1</Nominal>
+        <Value>95,1234</Value>
+    </Valute>
+</ValCurs>"#;
+        let val_curs: ValCurs = quick_xml::de::from_str(xml).unwrap();
+        assert_eq!(val_curs.date, "18.03.2026");
+        assert_eq!(val_curs.valutes.len(), 2);
+        assert_eq!(val_curs.valutes[0].char_code, "USD");
+        assert_eq!(val_curs.valutes[0].nominal, "1");
+        assert_eq!(val_curs.valutes[0].value, "87,6325");
+        assert_eq!(val_curs.valutes[1].char_code, "EUR");
+    }
+
+    #[test]
+    fn valcurs_empty_valutes() {
+        let xml = r#"<ValCurs Date="18.03.2026"></ValCurs>"#;
+        let val_curs: ValCurs = quick_xml::de::from_str(xml).unwrap();
+        assert_eq!(val_curs.date, "18.03.2026");
+        assert!(val_curs.valutes.is_empty());
+    }
+
+    #[test]
+    fn process_xml_extracts_requested_currencies() {
+        let xml = r#"<?xml version="1.0" encoding="windows-1251"?>
+<ValCurs Date="18.03.2026" name="Foreign Currency Market">
+    <Valute ID="R01235">
+        <CharCode>USD</CharCode>
+        <Nominal>1</Nominal>
+        <Value>87,6325</Value>
+    </Valute>
+    <Valute ID="R01239">
+        <CharCode>EUR</CharCode>
+        <Nominal>1</Nominal>
+        <Value>95,1234</Value>
+    </Valute>
+    <Valute ID="R01270">
+        <CharCode>CNY</CharCode>
+        <Nominal>10</Nominal>
+        <Value>121,4500</Value>
+    </Valute>
+</ValCurs>"#;
+        let rates = process_xml(xml, &[Currency::USD, Currency::EUR]).unwrap();
+        assert_eq!(rates.len(), 2);
+        assert_eq!(rates[0].currency, Currency::USD);
+        assert_eq!(rates[0].country, Country::Russia);
+        assert!((rates[0].rate - 87.6325).abs() < 1e-10);
+        assert_eq!(rates[0].date, "2026-03-18");
+        assert_eq!(rates[1].currency, Currency::EUR);
+        assert!((rates[1].rate - 95.1234).abs() < 1e-10);
+    }
+
+    #[test]
+    fn process_xml_filters_unwanted_currencies() {
+        let xml = r#"<ValCurs Date="18.03.2026">
+    <Valute ID="R01235">
+        <CharCode>USD</CharCode>
+        <Nominal>1</Nominal>
+        <Value>87,6325</Value>
+    </Valute>
+    <Valute ID="R01239">
+        <CharCode>EUR</CharCode>
+        <Nominal>1</Nominal>
+        <Value>95,1234</Value>
+    </Valute>
+</ValCurs>"#;
+        let rates = process_xml(xml, &[Currency::GBP]).unwrap();
+        assert!(rates.is_empty());
+    }
+
+    #[test]
+    fn process_xml_handles_nominal_division() {
+        let xml = r#"<ValCurs Date="18.03.2026">
+    <Valute>
+        <CharCode>GBP</CharCode>
+        <Nominal>10</Nominal>
+        <Value>1100,5000</Value>
+    </Valute>
+</ValCurs>"#;
+        let rates = process_xml(xml, &[Currency::GBP]).unwrap();
+        assert_eq!(rates.len(), 1);
+        assert!((rates[0].rate - 110.05).abs() < 1e-10);
+    }
+
+    #[test]
+    fn process_xml_empty_response() {
+        let xml = r#"<ValCurs Date="18.03.2026"></ValCurs>"#;
+        let rates = process_xml(xml, &[Currency::USD]).unwrap();
+        assert!(rates.is_empty());
+    }
+
+    #[tokio::test]
+    async fn fetch_from_with_mock_server() {
+        use wiremock::{MockServer, Mock, ResponseTemplate};
+        use wiremock::matchers::method;
+
+        let xml = r#"<ValCurs Date="18.03.2026">
+    <Valute><CharCode>USD</CharCode><Nominal>1</Nominal><Value>87,6325</Value></Valute>
+    <Valute><CharCode>EUR</CharCode><Nominal>1</Nominal><Value>95,1234</Value></Valute>
+</ValCurs>"#;
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(xml))
+            .mount(&server)
+            .await;
+
+        let client = reqwest::Client::new();
+        let rates = fetch(&client, &server.uri(), &[Currency::USD, Currency::EUR]).await.unwrap();
+        assert_eq!(rates.len(), 2);
+        assert_eq!(rates[0].currency, Currency::USD);
+        assert!((rates[0].rate - 87.6325).abs() < 1e-10);
+        assert_eq!(rates[1].currency, Currency::EUR);
     }
 }
