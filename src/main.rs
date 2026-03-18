@@ -77,3 +77,73 @@ async fn main() -> anyhow::Result<()> {
     output::print_rates(&all_rates, cli.format);
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_currencies_single() {
+        let result = parse_currencies("usd").unwrap();
+        assert_eq!(result, vec![Currency::USD]);
+    }
+
+    #[test]
+    fn parse_currencies_multiple() {
+        let result = parse_currencies("usd,eur,gbp").unwrap();
+        assert_eq!(result, vec![Currency::USD, Currency::EUR, Currency::GBP]);
+    }
+
+    #[test]
+    fn parse_currencies_with_spaces() {
+        let result = parse_currencies(" usd , eur ").unwrap();
+        assert_eq!(result, vec![Currency::USD, Currency::EUR]);
+    }
+
+    #[test]
+    fn parse_currencies_invalid() {
+        assert!(parse_currencies("xyz").is_err());
+    }
+
+    #[test]
+    fn parse_currencies_mixed_valid_invalid() {
+        assert!(parse_currencies("usd,xyz").is_err());
+    }
+
+    #[test]
+    fn parse_countries_all() {
+        let result = parse_countries("all").unwrap();
+        assert_eq!(result.len(), 4);
+    }
+
+    #[test]
+    fn parse_countries_all_case_insensitive() {
+        let result = parse_countries("ALL").unwrap();
+        assert_eq!(result.len(), 4);
+        let result2 = parse_countries(" All ").unwrap();
+        assert_eq!(result2.len(), 4);
+    }
+
+    #[test]
+    fn parse_countries_single() {
+        let result = parse_countries("poland").unwrap();
+        assert_eq!(result, vec![Country::Poland]);
+    }
+
+    #[test]
+    fn parse_countries_abbreviations() {
+        let result = parse_countries("by,ge").unwrap();
+        assert_eq!(result, vec![Country::Belarus, Country::Georgia]);
+    }
+
+    #[test]
+    fn parse_countries_with_spaces() {
+        let result = parse_countries(" russia , poland ").unwrap();
+        assert_eq!(result, vec![Country::Russia, Country::Poland]);
+    }
+
+    #[test]
+    fn parse_countries_invalid() {
+        assert!(parse_countries("mars").is_err());
+    }
+}

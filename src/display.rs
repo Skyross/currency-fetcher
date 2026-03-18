@@ -31,3 +31,26 @@ pub(crate) fn print_rates(rates: &[ExchangeRate]) {
 
     println!("{}", Table::new(rows));
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::{Country, Currency};
+
+    #[test]
+    fn print_rates_with_data_does_not_panic() {
+        let rates = vec![ExchangeRate {
+            country: Country::Poland,
+            currency: Currency::USD,
+            rate: 4.0123,
+            date: "2026-03-16".to_string(),
+        }];
+        // Exercises the table-building logic; output goes to stdout
+        print_rates(&rates);
+    }
+
+    #[test]
+    fn print_rates_empty_does_not_panic() {
+        print_rates(&[]);
+    }
+}

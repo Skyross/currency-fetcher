@@ -122,4 +122,86 @@ mod tests {
         assert!(Currency::USD < Currency::EUR);
         assert!(Currency::EUR < Currency::GBP);
     }
+
+    #[test]
+    fn currency_display() {
+        assert_eq!(Currency::USD.to_string(), "USD");
+        assert_eq!(Currency::EUR.to_string(), "EUR");
+        assert_eq!(Currency::GBP.to_string(), "GBP");
+    }
+
+    #[test]
+    fn currency_from_str_case_insensitive() {
+        assert_eq!("usd".parse::<Currency>().unwrap(), Currency::USD);
+        assert_eq!("USD".parse::<Currency>().unwrap(), Currency::USD);
+        assert_eq!("Eur".parse::<Currency>().unwrap(), Currency::EUR);
+        assert_eq!("gbp".parse::<Currency>().unwrap(), Currency::GBP);
+    }
+
+    #[test]
+    fn currency_from_str_unknown_errors() {
+        let err = "xyz".parse::<Currency>();
+        assert!(err.is_err());
+        assert!(err.unwrap_err().to_string().contains("unknown currency"));
+    }
+
+    #[test]
+    fn currency_as_lower_code() {
+        assert_eq!(Currency::USD.as_lower_code(), "usd");
+        assert_eq!(Currency::EUR.as_lower_code(), "eur");
+        assert_eq!(Currency::GBP.as_lower_code(), "gbp");
+    }
+
+    #[test]
+    fn country_display() {
+        assert_eq!(Country::Belarus.to_string(), "Belarus");
+        assert_eq!(Country::Georgia.to_string(), "Georgia");
+        assert_eq!(Country::Poland.to_string(), "Poland");
+        assert_eq!(Country::Russia.to_string(), "Russia");
+    }
+
+    #[test]
+    fn country_from_str_full_names() {
+        assert_eq!("belarus".parse::<Country>().unwrap(), Country::Belarus);
+        assert_eq!("GEORGIA".parse::<Country>().unwrap(), Country::Georgia);
+        assert_eq!("Poland".parse::<Country>().unwrap(), Country::Poland);
+        assert_eq!("russia".parse::<Country>().unwrap(), Country::Russia);
+    }
+
+    #[test]
+    fn country_from_str_abbreviations() {
+        assert_eq!("by".parse::<Country>().unwrap(), Country::Belarus);
+        assert_eq!("ge".parse::<Country>().unwrap(), Country::Georgia);
+        assert_eq!("pl".parse::<Country>().unwrap(), Country::Poland);
+        assert_eq!("ru".parse::<Country>().unwrap(), Country::Russia);
+    }
+
+    #[test]
+    fn country_from_str_unknown_errors() {
+        let err = "mars".parse::<Country>();
+        assert!(err.is_err());
+        assert!(err.unwrap_err().to_string().contains("unknown country"));
+    }
+
+    #[test]
+    fn country_all_returns_all_variants() {
+        let all = Country::all();
+        assert_eq!(all.len(), 4);
+        assert!(all.contains(&Country::Belarus));
+        assert!(all.contains(&Country::Georgia));
+        assert!(all.contains(&Country::Poland));
+        assert!(all.contains(&Country::Russia));
+    }
+
+    #[test]
+    fn country_serializes_lowercase() {
+        let json = serde_json::to_string(&Country::Belarus).unwrap();
+        assert_eq!(json, "\"belarus\"");
+    }
+
+    #[test]
+    fn currency_serializes_lowercase() {
+        let json = serde_json::to_string(&Currency::USD).unwrap();
+        assert_eq!(json, "\"usd\"");
+    }
 }

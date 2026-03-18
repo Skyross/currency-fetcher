@@ -1,0 +1,16 @@
+{
+  "planPath": "docs/superpowers/plans/2026-03-18-rust-review-fixes.md",
+  "tasks": [
+    {"id": 1, "subject": "Task 1: Fix CBR thousands-separator parsing", "status": "pending"},
+    {"id": 2, "subject": "Task 2: Parse CBR Nominal as u32 instead of f64", "status": "pending", "blockedBy": [1]},
+    {"id": 3, "subject": "Task 3: Move OutputFormat to output.rs", "status": "pending"},
+    {"id": 4, "subject": "Task 4: Restrict display::print_rates to pub(crate)", "status": "pending"},
+    {"id": 5, "subject": "Task 5: Derive Ord on enums and simplify sort", "status": "pending"},
+    {"id": 6, "subject": "Task 6: Extract shared trim_date utility", "status": "pending"},
+    {"id": 7, "subject": "Task 7: Remove redundant currency_code helpers", "status": "pending"},
+    {"id": 8, "subject": "Task 8: Fix NBG redundant currency code re-match", "status": "pending", "blockedBy": [6]},
+    {"id": 9, "subject": "Task 9: Use eq_ignore_ascii_case in Currency::from_str", "status": "pending"},
+    {"id": 10, "subject": "Task 10: Use HashSet for CBR wanted-currencies lookup", "status": "pending"}
+  ],
+  "lastUpdated": "2026-03-18T03:08:00+04:00"
+}

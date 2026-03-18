@@ -64,4 +64,26 @@ mod tests {
         let json = format_json(&[]);
         assert_eq!(json.trim(), "[]");
     }
+
+    #[test]
+    fn print_rates_table_does_not_panic() {
+        let rates = make_rates();
+        print_rates(&rates, OutputFormat::Table);
+    }
+
+    #[test]
+    fn print_rates_json_does_not_panic() {
+        let rates = make_rates();
+        print_rates(&rates, OutputFormat::Json);
+    }
+
+    #[test]
+    fn print_rates_empty_table() {
+        print_rates(&[], OutputFormat::Table);
+    }
+
+    #[test]
+    fn print_rates_empty_json() {
+        print_rates(&[], OutputFormat::Json);
+    }
 }
